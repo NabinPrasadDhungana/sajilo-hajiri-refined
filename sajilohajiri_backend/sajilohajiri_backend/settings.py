@@ -139,3 +139,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
     ]
 }
+
+# Media configurations
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media/'
