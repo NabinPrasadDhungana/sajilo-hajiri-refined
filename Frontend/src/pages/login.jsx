@@ -59,10 +59,19 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await api.post("token/", {
-        email: formData.email,
-        password: formData.password,
-      });
+      const response = await api.post(
+        "token/",
+        {
+          username: formData.email,
+          password: formData.password,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const data = response.data; // { access: "...", refresh: "..." }
 
@@ -170,6 +179,13 @@ const Login = () => {
             style={{ color: "#4a5568", fontSize: "0.875rem" }}
           >
             ← Back to Home
+          </Link>
+           <Link
+            to="/register"
+            className="btn btn-link text-decoration-none"
+            style={{ color: "#4a5568", fontSize: "0.875rem" }}
+          >
+            Register  
           </Link>
         </div>
       </div>

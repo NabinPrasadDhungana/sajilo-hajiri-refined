@@ -1,0 +1,119 @@
+/* General App Styling */
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+/* --------------------- */
+/* Navigation Bar        */
+/* --------------------- */
+/* Removed the previous global .navbar block that forced `position: fixed`, `height: 80px` and `background-color: blue`
+   because it conflicted with Bootstrap and the Navbar component. Keep only minimal safe overrides below. */
+
+.navbar {
+  /* Keep only lightweight, non-conflicting helpers */
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* --------------------- */
+/* Main Content Padding  */
+/* --------------------- */
+.main-content {
+  margin-top: 0; /* Navbar component inserts .navbar-spacer to reserve space. Keep zero to avoid double spacing. */
+  margin-bottom: 70px;
+}
+
+/* --------------------- */
+/* Footer                */
+/* --------------------- */
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
+  height: 50px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --------------------- */
+/* Buttons               */
+/* --------------------- */
+.btn-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  border: none;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3, #003f7f);
+  transform: scale(1.05);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-success:hover {
+  transform: scale(1.03);
+  transition: transform 0.2s ease-in-out;
+}
+
+/* --------------------- */
+/* Miscellaneous         */
+/* --------------------- */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* dashboard card css */
+.card-title {
+  font-weight: bold;
+  color: #343a40;
+}

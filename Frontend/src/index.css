@@ -1,0 +1,25 @@
+/* global reset + sensible defaults */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+  color: #111827;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ensure smooth scrolling is preserved */
+html {
+  scroll-behavior: smooth;
+}
