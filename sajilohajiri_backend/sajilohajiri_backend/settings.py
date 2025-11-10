@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'face',
     'attendance',
     'reports',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
