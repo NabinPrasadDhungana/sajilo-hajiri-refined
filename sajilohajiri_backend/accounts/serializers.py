@@ -4,12 +4,16 @@ from .models import User
 # serializers go down here
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password', 'placeholder': 'Password'}
+        )
 
     class Meta:
         model = User
         fields = [
-            'username',
+            'id',
             'email',
             'password',
             'name',
@@ -23,6 +27,14 @@ class UserSerializer(serializers.ModelSerializer):
             'approval_status',
             'feedback',
         ]
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        instance = self.Meta.model(**validated_data)
+        if password is not None:
+            instance.set_password(password)
+        instance.save()
+        return instance
 
     def get_avatar_url(self, obj):
         request = self.context.get('request', None)
