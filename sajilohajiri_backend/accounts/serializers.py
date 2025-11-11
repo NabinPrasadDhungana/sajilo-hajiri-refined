@@ -4,12 +4,14 @@ from .models import User
 # serializers go down here
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
         fields = [
             'username',
             'email',
+            'password',
             'name',
             'avatar',
             'avatar_url',
