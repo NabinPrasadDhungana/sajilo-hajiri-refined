@@ -2,7 +2,7 @@ from django.shortcuts import render
 from .models import Class, Subject, ClassSubject, StudentClassEnrollment
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
-from .serializers import ClassSerializer, SubjectSerializer
+from .serializers import ClassSerializer, SubjectSerializer, ClassSubjectSerializer
 
 # Create your views here.
 class ClassViewSet(viewsets.ModelViewSet):
@@ -13,4 +13,9 @@ class ClassViewSet(viewsets.ModelViewSet):
 class SubjectViewSet(viewsets.ModelViewSet):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
+    permission_classes = [IsAdminUser]
+
+class ClassSubjectViewSet(viewsets.ModelViewSet):
+    queryset = ClassSubject.objects.all()
+    serializer_class = ClassSubjectSerializer
     permission_classes = [IsAdminUser]
