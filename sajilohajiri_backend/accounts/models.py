@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.urls import reverse
 from django.contrib.auth.base_user import BaseUserManager
+from django.db.models import Q, UniqueConstraint
 
 # Custom user manager
 class UserManager(BaseUserManager):
@@ -54,7 +55,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     name = models.CharField(max_length=150, blank=True, null=True)
-    roll_number = models.CharField(max_length=10, unique=True, null=True, blank=True, db_index=True)
+    roll_number = models.CharField(max_length=10, null=True, blank=True, db_index=True)
     semester = models.CharField(max_length=20, blank=True, null=True)
     section = models.CharField(max_length=20, blank=True, null=True)
     department = models.CharField(max_length=50, blank=True, null=True)
@@ -63,6 +64,15 @@ class User(AbstractUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['role', 'avatar', 'name']
+
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['roll_number'],
+                name='unique_roll_number_not_null',
+                condition=Q(roll_number__isnull=False)
+            )
+        ]
 
     def __str__(self):
         return self.name or self.email
