@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         style={'input_type': 'password', 'placeholder': 'Password'},
         validators=[RegexValidator(
             regex=r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*-])[A-Za-z\d!@#$%^&*-]{8,32}$',
-            message='The password must be 8-32 characters, include at least one lowercase, one uppercase, one digit, and one special character from !@#$%^&*-, and contain only those allowed characters.'
+                message='The password must be 8-32 characters, include at least one lowercase, one uppercase, one digit, and one special character. (Allowed special characters: !@#$%%^&*-).'
         )]
     )
 
@@ -47,3 +47,8 @@ class UserSerializer(serializers.ModelSerializer):
         if url and request is not None:
             return request.build_absolute_uri(url)
         return url
+    
+    def validate_roll_number(self, value):
+        if value == '':
+            return None
+        return value
