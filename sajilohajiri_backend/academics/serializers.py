@@ -31,3 +31,9 @@ class ClassSubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassSubject
         fields = '__all__'
+
+class StudentClassEnrollmentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = StudentClassEnrollment
+        fields = '__all__'
