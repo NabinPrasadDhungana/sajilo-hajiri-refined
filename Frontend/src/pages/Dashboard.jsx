@@ -6,6 +6,8 @@ import userFetch from "../services/UserFetchService";
 import Register from "./Register";
 import StudentRecords from '../services/StudentRecords';
 import { exportToCsv } from "../services/Csvexpoter";
+import { AuthContext } from "../context/Authcontext";
+import { useContext } from "react";
 
 export default function Dashboard({ user }) {
   // All hooks must be declared at the top level, never inside conditionals
@@ -45,7 +47,7 @@ export default function Dashboard({ user }) {
   const location = useLocation();
   useEffect(() => {
     if (user.role === "admin") return <AdminPanel />;
-  }, [currentRole, location.pathname, navigate]);
+  }, [currentRole, location.pathname, navigate, user.approval_status]);
 
   // Use a ref to mark in-flight fetch (stable across renders)
   const dashboardFetchRef = useRef(false);
@@ -59,16 +61,16 @@ export default function Dashboard({ user }) {
         // NOTE: backend may return an array of users for /accounts/api/users/
         // Normalize into { users, user } where `user` is the current profile.
         const result = await userFetch.get("accounts/api/users/");
-        if (Array.isArray(result) && result.length > 0) {
-          // Try to find the logged-in user's record by email
-          const matched = savedUser && savedUser.email ? result.find(u => u.email === savedUser.email) : null;
-          const serverProfile = matched || result[0];
-          const mergedProfile = { ...(serverProfile || {}), ...(savedUser || {}) };
-          setData({ users: result, user: mergedProfile });
-        } else {
+        // if (Array.isArray(result) && result.length > 0) {
+        //   // Try to find the logged-in user's record by email
+        //   const matched = savedUser && savedUser.email ? result.find(u => u.email === savedUser.email) : null;
+        //   const serverProfile = matched || result[0];
+        //   const mergedProfile = { ...(serverProfile || {}), ...(savedUser || {}) };
+        //   setData({ users: result, user: mergedProfile });
+        // } else {
           // If backend returned an object (dashboard shape), use it directly
           setData(result);
-        }
+        // }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
         // if unauthorized, redirect to login
@@ -117,9 +119,10 @@ export default function Dashboard({ user }) {
   // Prepare student dashboard variables
   let student = null, summaryBySubject = {}, sortedSubjects = [], totalPages = 1, startIdx = 0, endIdx = 0, pagedAttendance = [], subjectOptions = [];
 
-  if (currentUser?.role === "student" && data && data.student_data) {
-    student = data.student_data;
+  if (currentUser?.role === "student" && data) {
+    student = data.find(e => e.email === currentUser.email);
     // Attendance summary by subject
+    console.log(student);
     const getAttendanceSummaryBySubject = attendance => {
       const summary = {};
       attendance.forEach(a => {
@@ -161,9 +164,7 @@ export default function Dashboard({ user }) {
     pagedAttendance = filteredAttendance.slice(startIdx, endIdx);
   }
   if (currentUser?.role === "student") {
-    if (!student) {
-      return <div className="main-content container  alert alert-warning">⚠️ You are not enrolled in any class yet.</div>;
-    }
+    
     // Status options for filter dropdown
     const statusOptions = [
       { value: '', label: 'All' },
@@ -174,10 +175,10 @@ export default function Dashboard({ user }) {
     ];
     return (
       <div className="main-content container ">
-        <h2 className="mb-4">Welcome, {currentUser.name || currentUser.username} 👨‍🎓</h2>
+        <h2 className="mb-4">Welcome, {student.name || currentUser.username} 👨‍🎓</h2>
         <div className="card mb-4 shadow-sm">
           <div className="card-body">
-            <h5 className="card-title">📚 Class: <span className="text-primary">{student.class}</span></h5>
+            <h5 className="card-title">📚 Class: <span className="text-primary">{student.department } {student.section}</span></h5>
           </div>
         </div>
         <div className="card mb-4 shadow-sm">

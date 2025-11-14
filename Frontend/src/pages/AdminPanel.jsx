@@ -31,6 +31,7 @@ export default function AdminPanel() {
   const [error, setError] = useState(null);
 
   // Data states
+  
   const [stats, setStats] = useState({});
   const [users, setUsers] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -384,6 +385,7 @@ export default function AdminPanel() {
       });
       toast.success("Student enrolled successfully!");
       const enrollList = await userFetch.get("academics/api/student-class-enrollment/");
+      
       setEnrollments(Array.isArray(enrollList) ? enrollList : []);
       setFormData((prev) => ({ ...prev, studentId: "", enrollClassId: "" }));
     } catch (err) {
@@ -444,8 +446,12 @@ export default function AdminPanel() {
       { approval_status: action+"d" }
     );
       toast.success(`User ${action}d successfully`);
-      const usersList = await userFetch.get("accounts/api/users/");
-      setUsers(Array.isArray(usersList) ? usersList : []);
+      const studentList = await userFetch.get("/accounts/api/users/?role=student");
+      const userList = await userFetch.get("/accounts/api/users/");
+      setUsers(Array.isArray(userList) ? userList : []);
+      setStudents(Array.isArray(studentList) ? studentList : []);
+
+      
     } catch (err) {
       console.error("Action error:", err);
       toast.error(`Failed to ${action} user: ${err?.message || String(err)}`);
@@ -615,7 +621,7 @@ export default function AdminPanel() {
                     
                     {assignments.slice(0, 5).map(assign => {
                       const teacher = teachers.find(
-  t => t.id === assign.teacher && t.approval_status == "approved"
+  t => t.id === assign.teacher
 );
 ;
                       const classItem = classes.find(c => c.id === assign.class_instance);
@@ -643,7 +649,7 @@ export default function AdminPanel() {
                   <thead><tr><th>Student</th><th>Class</th><th>Enrolled On</th><th>Actions</th></tr></thead>
                   <tbody>
                     {enrollments.slice(0, 5).map(enr => {
-                      const student = students.find(s => s.id === enr.student);
+                      const student = students.find(s => s.id === enr.student );
                       const classItem = classes.find(c => c.id === enr.enrolled_class);
                       return (
                         <tr key={enr.id}>

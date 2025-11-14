@@ -73,15 +73,22 @@ const userFetch = {
       handleError(err);
     }
   },
- 
-  patch: async (path, body = {}, opts = {}) => {
-  try {
-    const res = await api.patch(normalize(path), body, opts);
-    return res.data;
-  } catch (err) {
-    handleError(err);
-  }
-},
+  delete: async (path, opts = {}) => {
+    try {
+      const res = await api.delete(normalize(path), opts);
+      return res.data;
+    } catch (err) {
+      handleError(err);
+    }
+  },
+    patch: async (path, body = {}, opts = {}) => {
+    try {
+      const res = await api.patch(normalize(path), body, opts);
+      return res.data;
+    } catch (err) {
+      handleError(err);
+    }
+  },
 };
 
 export default userFetch;
