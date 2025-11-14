@@ -595,9 +595,7 @@ html {
 }
 
 /* Ensure proper spacing between sections */
-section {
-  padding: 80px 0 !important;
-}
+
 
 section.py-8 {
   padding: 80px 0 !important;

@@ -6,6 +6,8 @@ import { toast } from "react-toastify";
 import StudentRecords from "../services/StudentRecords";
 import { AuthContext } from "../context/Authcontext";
 import { useContext } from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 /**
  * AdminPanel
@@ -143,12 +145,13 @@ export default function AdminPanel() {
 
      
       setUsers(Array.isArray(usersData) ? usersData : []);
-      console.log("Users data:", usersData);
+     console.log("Users data:", usersData);
       setTeachers(Array.isArray(teachersData) ? teachersData : []);
       setStudents(Array.isArray(studentsData) ? studentsData : []);
       setClasses(Array.isArray(classesData) ? classesData : []);
       setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
       setEnrollments(Array.isArray(enrollmentsData) ? enrollmentsData : []);
+      console.log("Enrollments data:", enrollmentsData);
       setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
       setError(null);
     } catch (err) {
@@ -272,9 +275,9 @@ export default function AdminPanel() {
       return;
     }
     try {
-      await userFetch.post("/api/subjects/", { name: formData.subjectName, code: formData.subjectCode });
+      await userFetch.post("academics/api/subjects/", { name: formData.subjectName, code: formData.subjectCode });
       toast.success("Subject created successfully!");
-      const subjectsList = await userFetch.get("/api/subjects/");
+      const subjectsList = await userFetch.get("academics/api/subjects/");
       setSubjects(Array.isArray(subjectsList) ? subjectsList : []);
       setFormData((prev) => ({ ...prev, subjectName: "", subjectCode: "" }));
     } catch (err) {
@@ -287,7 +290,7 @@ export default function AdminPanel() {
     e.preventDefault();
     if (!editMode.subject) return;
     try {
-      await userFetch.put(`/api/subjects/${editMode.subject}/`, {
+      await userFetch.put(`academics/api/subjects/${editMode.subject}/`, {
         name: formData.subjectName,
         code: formData.subjectCode,
       });
@@ -375,12 +378,12 @@ export default function AdminPanel() {
       return;
     }
     try {
-      await userFetch.post("/api/enrollments/", {
+      await userFetch.post("academics/api/student-class-enrollment/", {
         student: formData.studentId,
         enrolled_class: formData.enrollClassId,
       });
       toast.success("Student enrolled successfully!");
-      const enrollList = await userFetch.get("/api/enrollments/");
+      const enrollList = await userFetch.get("academics/api/student-class-enrollment/");
       setEnrollments(Array.isArray(enrollList) ? enrollList : []);
       setFormData((prev) => ({ ...prev, studentId: "", enrollClassId: "" }));
     } catch (err) {
@@ -396,13 +399,13 @@ export default function AdminPanel() {
       return;
     }
     try {
-      await userFetch.post("/api/admin/assign-teacher/", {
+      await userFetch.post("academics/api/class-subject/", {
         teacher: formData.teacherId,
         class_instance: formData.classId,
         subject: formData.subjectId,
       });
       toast.success("Teacher assigned successfully!");
-      const assignmentsList = await userFetch.get("/api/assignments/");
+      const assignmentsList = await userFetch.get("academics/api/class-subject/");
       setAssignments(Array.isArray(assignmentsList) ? assignmentsList : []);
       setFormData((prev) => ({ ...prev, teacherId: "", classId: "", subjectId: "" }));
     } catch (err) {
@@ -423,9 +426,9 @@ export default function AdminPanel() {
   const deleteEnrollment = async (enrollmentId) => {
     if (!window.confirm("Are you sure you want to remove this enrollment?")) return;
     try {
-      await userFetch.delete(`/api/enrollments/${enrollmentId}/`);
+      await userFetch.delete(`academics/api/student-class-enrollment/${enrollmentId}/`);
       toast.success("Enrollment removed successfully");
-      const enrollList = await userFetch.get("/api/enrollments/");
+      const enrollList = await userFetch.get("academics/api/student-class-enrollment/");
       setEnrollments(Array.isArray(enrollList) ? enrollList : []);
     } catch (err) {
       console.error("Delete enrollment error:", err);
@@ -434,11 +437,14 @@ export default function AdminPanel() {
   };
 
   // ---------- Approve / Unapprove / Feedback ----------
-  const handleUserAction = async (email, action) => {
+  const handleUserAction = async (email, action,id) => {
     try {
-      await userFetch.post("/api/admin/approve-user/", { email, action });
+ await userFetch.patch(
+      `accounts/api/users/${id}/`,
+      { approval_status: action+"d" }
+    );
       toast.success(`User ${action}d successfully`);
-      const usersList = await userFetch.get("/api/admin/pending-users/");
+      const usersList = await userFetch.get("accounts/api/users/");
       setUsers(Array.isArray(usersList) ? usersList : []);
     } catch (err) {
       console.error("Action error:", err);
@@ -497,6 +503,7 @@ export default function AdminPanel() {
 
   return (
     <div className="container-fluid">
+       <ToastContainer position="top-right" autoClose={2500} />
       <h1 className="mb-4">Admin Panel</h1>
 
       {/* Tabs */}
@@ -576,8 +583,13 @@ export default function AdminPanel() {
                     <div className="mb-3">
                       <select name="studentId" className="form-select" onChange={handleChange} required value={formData.studentId}>
                         <option value="">Select Student</option>
-                        {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
+{students
+  .filter(s => s.approval_status == "approved")
+  .map(s => (
+    <option key={s.id} value={s.id}>
+      {s.name}
+    </option>
+))}                      </select>
                     </div>
                     <div className="mb-3">
                       <select name="enrollClassId" className="form-select" onChange={handleChange} required value={formData.enrollClassId}>
@@ -600,8 +612,12 @@ export default function AdminPanel() {
                 <table className="table table-hover">
                   <thead><tr><th>Teacher</th><th>Class</th><th>Subject</th><th>Actions</th></tr></thead>
                   <tbody>
+                    {console.log(teachers)}
                     {assignments.slice(0, 5).map(assign => {
-                      const teacher = teachers.find(t => t.id === assign.teacher);
+                      const teacher = teachers.find(
+  t => t.id === assign.teacher && t.approval_status == "approved"
+);
+;
                       const classItem = classes.find(c => c.id === assign.class_instance);
                       const subject = subjects.find(s => s.id === assign.subject);
                       return (
@@ -723,8 +739,8 @@ export default function AdminPanel() {
                             <button className="btn btn-sm btn-info" onClick={() => setViewUser(u)}>View</button>
                             <button className="btn btn-sm btn-primary" onClick={() => editUser(u)}>Edit</button>
                             <button className="btn btn-sm btn-danger" onClick={() => deleteUser(u.id)} disabled={u.id === user?.id}>Delete</button>
-                            {u.approval_status !== "approved" && <button className="btn btn-sm btn-success" onClick={() => handleUserAction(u.email, "approve")}>Approve</button>}
-                            {u.approval_status !== "unapproved" && <button className="btn btn-sm btn-warning" onClick={() => handleUserAction(u.email, "unapprove")}>Unapprove</button>}
+                            {u.approval_status !== "approved" && <button className="btn btn-sm btn-success" onClick={() => handleUserAction(u.email, "approve", u.id)}>Approve</button>}
+                            {u.approval_status !== "unapproved" && <button className="btn btn-sm btn-warning" onClick={() => handleUserAction(u.email, "unapprove", u.id)}>Unapprove</button>}
                             <button className={`btn btn-sm ${selectedEmail === u.email ? "btn-secondary" : "btn-info"}`} onClick={() => setSelectedEmail(selectedEmail === u.email ? null : u.email)}>{selectedEmail === u.email ? "Cancel" : "Feedback"}</button>
                           </div>
                         </td>
@@ -775,8 +791,8 @@ export default function AdminPanel() {
                                   </dl>
                                 </div>
                                 <div className="modal-footer">
-                                  {viewUser.approval_status !== "approved" && <button className="btn btn-success" onClick={() => { handleUserAction(viewUser.email, "approve"); setViewUser(null); }}>Approve</button>}
-                                  {viewUser.approval_status !== "unapproved" && <button className="btn btn-warning" onClick={() => { handleUserAction(viewUser.email, "unapprove"); setViewUser(null); }}>Unapprove</button>}
+                                  {viewUser.approval_status !== "approved" && <button className="btn btn-success" onClick={() => { handleUserAction(viewUser.email, "approve",viewUser.id); setViewUser(null); }}>Approve</button>}
+                                  {viewUser.approval_status !== "unapproved" && <button className="btn btn-warning" onClick={() => { handleUserAction(viewUser.email, "unapprove",viewUser.id); setViewUser(null); }}>Unapprove</button>}
                                   <button className="btn btn-secondary" onClick={() => setViewUser(null)}>Close</button>
                                 </div>
                               </div>
@@ -855,7 +871,7 @@ export default function AdminPanel() {
                         <td>{classItem.year}</td>
                         <td>{classItem.semester}</td>
                         <td>{classItem.department}</td>
-                        <td>{enrollments.filter(e => e.enrolled_class === classItem.id).length}</td>
+                        <td>{enrollments.length}</td>
                         <td>
                           <div className="d-flex gap-2">
                             <button className="btn btn-sm btn-primary" onClick={() => editClass(classItem)}>Edit</button>
