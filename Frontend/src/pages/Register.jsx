@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import WebcamCapture from '../services/webcamcapture';
+import WebcamCapture from '../services/WebcamCapture';
 
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useContext } from "react";
