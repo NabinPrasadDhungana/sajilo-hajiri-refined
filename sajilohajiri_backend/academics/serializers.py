@@ -27,6 +27,10 @@ class SubjectSerializer(serializers.ModelSerializer):
 class ClassSubjectSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
+
+    class_instance = serializers.StringRelatedField()
+    subject = serializers.StringRelatedField()
+    teacher = serializers.StringRelatedField()
     
     class Meta:
         model = ClassSubject
