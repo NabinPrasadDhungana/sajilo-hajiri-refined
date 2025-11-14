@@ -58,39 +58,55 @@ const Login = () => {
     if (!validateForm()) return;
     setLoading(true);
 
-    try {
-      const response = await api.post(
-        "token/",
-        {
-          username: formData.email,
-          password: formData.password,
-        },
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+   try {
+  // 1️⃣ Login request — get JWT tokens
+  const response = await api.post(
+    "/api/token/",
+    {
+      email: formData.email,
+      password: formData.password,
+    },
+    {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
-      const data = response.data; // { access: "...", refresh: "..." }
+  const data = response.data; // { access, refresh }
 
-      // Decode token payload (optional)
-      const payload = JSON.parse(atob(data.access.split(".")[1]));
-      const userData = {
-        email: payload.email,
-        role: payload.role || "user",
-      };
+  // 2️⃣ Decode JWT payload (optional — may only contain user_id)
+  const payload = JSON.parse(atob(data.access.split(".")[1]));
+  console.log("Decoded JWT Payload:", payload);
 
-      // Remember email if checked
-      if (formData.remember) {
-        localStorage.setItem("rememberedEmail", formData.email);
-      } else {
-        localStorage.removeItem("rememberedEmail");
-      }
+  // 3️⃣ Fetch full user details using the access token
+  // (You must have a Django endpoint like /api/user/me/ that returns user info)
+  const profileResponse = await api.get(`/accounts/api/users/${payload.user_id}/`, {
+    headers: {
+      Authorization: `Bearer ${data.access}`,
+    },
+  });
 
-      // Save token + user
-      login(userData, data.access);
+  const user = profileResponse.data; // Example: { id, email, username, role }
+
+  // 4️⃣ Build userData object
+  const userData = {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    role: user.role || "user",
+  };
+
+  // 5️⃣ Remember email if "remember me" is checked
+  if (formData.remember) {
+    localStorage.setItem("rememberedEmail", formData.email);
+  } else {
+    localStorage.removeItem("rememberedEmail");
+  }
+
+  // 6️⃣ Store token + user data in context/state
+  login(userData, data.access, data.refresh);
 
       toast.success("✅ Login successful");
       setTimeout(() => {

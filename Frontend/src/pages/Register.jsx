@@ -8,7 +8,10 @@ import api from "../api/api"; // if you're using axios instance
 
 
 const Register = (props) => {
-     const user = useContext(AuthContext);
+     // read context once at top-level
+     const auth = useContext(AuthContext);
+     console.log("Auth context in Register:", auth);
+     
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
@@ -62,44 +65,34 @@ const Register = (props) => {
  
 useEffect(() => {
   const loadUserDataIfEdit = async () => {
-    if (props.editMode) {
-      try {
-        // Get token from AuthContext
-        const { token } = useContext(AuthContext);
+    if (!props.editMode) return;
+    try {
+      // Use auth.access (or auth.token) from context; api instance adds Authorization automatically
+      const res = await api.get(`accounts/api/users/${auth.user?.id}`);
+      const userData = res.data;
 
-        // --- Using axios instance (api.jsx) ---
-        const res = await api.get("/pending-self-info/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      setFormData({
+        fullName: userData.name || "",
+        email: userData.email || "",
+        password: "",
+        confirmPassword: "",
+        role: userData.role || "student",
+        semester: userData.semester || "",
+        section: userData.section || "",
+        department: userData.department || "",
+        collegeRoll: userData.roll_number || "",
+      });
 
-        const userData = res.data;
-
-        setFormData({
-          fullName: userData.name || "",
-          email: userData.email || "",
-          password: "",
-          confirmPassword: "",
-          role: userData.role || "student",
-          semester: userData.semester || "",
-          section: userData.section || "",
-          department: userData.department || "",
-          collegeRoll: userData.roll_number || "",
-        });
-
-        if (userData.avatar) {
-          setPhoto(`http://localhost:8000${userData.avatar}`);
-        }
-      } catch (err) {
-        console.error("Error fetching user data:", err);
+      if (userData.avatar) {
+        setPhoto(userData.avatar.startsWith('http') ? userData.avatar : `http://localhost:8000${userData.avatar}`);
       }
+    } catch (err) {
+      console.error("Error fetching user data:", err);
     }
   };
 
   loadUserDataIfEdit();
 }, [props.editMode]);
-
   const validateForm = () => {
   const newErrors = {};
   const { fullName, email, password, confirmPassword, role } = formData;
@@ -145,7 +138,7 @@ useEffect(() => {
     }
 
    
-    const isPendingUser = user && user.approval_status === "pending";
+    const isPendingUser = auth?.user && auth.user.approval_status === "pending";
 
     try {
       const formPayload = new FormData();
@@ -165,14 +158,14 @@ useEffect(() => {
       const blob = await fetch(photo).then(res => res.blob());
       formPayload.append('avatar', blob, 'photo.jpg');
 
-  const endpoint = isPendingUser ? '/api/update-info/' : '/api/register/';
+  const endpoint = isPendingUser ? `accounts/api/users/${auth.user?.id}/` : 'accounts/api/users/';
   const response = await api.post(endpoint, formPayload, {
-    headers: {
-      "Content-Type": "multipart/form-data", // ✅ important for image uploads
-    },
-  });
-
-      const data = await response.data;
+     headers: {
+       "Content-Type": "multipart/form-data", // ✅ important for image uploads
+     },
+   });
+ 
+      const data = response.data;
 
       if (response.status === 200 || response.status === 201) {
         if (isPendingUser) {

@@ -1,42 +1,57 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from "react";
 
-// 1️⃣ Create the context
 export const AuthContext = createContext();
 
-// 2️⃣ Create the provider
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // store user object
-  const [token, setToken] = useState(null); // store JWT token
+  const [user, setUser] = useState(null);
+  const [access, setAccess] = useState(null);
+  const [refresh, setRefresh] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ Add loading flag
 
-  // When app loads, check if user/token exists in localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
-    }
+    const storedAccess = localStorage.getItem("access");
+    const storedRefresh = localStorage.getItem("refresh");
+
+    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedAccess) setAccess(storedAccess);
+    if (storedRefresh) setRefresh(storedRefresh);
+
+    setLoading(false); // ✅ Finished restoring
   }, []);
 
-  // Login function (called after successful authentication)
-  const login = (userData, jwtToken) => {
+  const login = (userData, accessToken, refreshToken = null) => {
     setUser(userData);
-    setToken(jwtToken);
+    setAccess(accessToken);
+    if (refreshToken) setRefresh(refreshToken);
+
     localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", jwtToken);
+    if (accessToken) localStorage.setItem("access", accessToken);
+    if (refreshToken) localStorage.setItem("refresh", refreshToken);
   };
 
-  // Logout function
   const logout = () => {
     setUser(null);
-    setToken(null);
+    setAccess(null);
+    setRefresh(null);
     localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        access,
+        refresh,
+        token: access,
+        login,
+        logout,
+        loading, // ✅ Expose loading
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
