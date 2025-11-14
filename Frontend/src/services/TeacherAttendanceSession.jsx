@@ -220,7 +220,7 @@ function TeacherAttendanceSession({ classSubjectId, students, sessionTitle }) {
               </button>
               <div className={showManual ? 'collapse show' : 'collapse'} id="manualAttendance">
                 <ul className="list-group">
-                  {console.log('Students:', students)}
+                  
                   {Array.isArray(students) && students.length > 0 ? (
                     students.map(s => (
                       <li className="list-group-item d-flex justify-content-between align-items-center" key={s.roll_number}>

@@ -10,7 +10,7 @@ import api from "../api/api"; // if you're using axios instance
 const Register = (props) => {
      // read context once at top-level
      const auth = useContext(AuthContext);
-     console.log("Auth context in Register:", auth);
+     
      
   const navigate = useNavigate();
   const [formData, setFormData] = useState({

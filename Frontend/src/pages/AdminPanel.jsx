@@ -145,13 +145,13 @@ export default function AdminPanel() {
 
      
       setUsers(Array.isArray(usersData) ? usersData : []);
-     console.log("Users data:", usersData);
+  
       setTeachers(Array.isArray(teachersData) ? teachersData : []);
       setStudents(Array.isArray(studentsData) ? studentsData : []);
       setClasses(Array.isArray(classesData) ? classesData : []);
       setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
       setEnrollments(Array.isArray(enrollmentsData) ? enrollmentsData : []);
-      console.log("Enrollments data:", enrollmentsData);
+      
       setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
       setError(null);
     } catch (err) {
@@ -612,7 +612,7 @@ export default function AdminPanel() {
                 <table className="table table-hover">
                   <thead><tr><th>Teacher</th><th>Class</th><th>Subject</th><th>Actions</th></tr></thead>
                   <tbody>
-                    {console.log(teachers)}
+                    
                     {assignments.slice(0, 5).map(assign => {
                       const teacher = teachers.find(
   t => t.id === assign.teacher && t.approval_status == "approved"

@@ -78,7 +78,7 @@ const Login = () => {
 
   // 2️⃣ Decode JWT payload (optional — may only contain user_id)
   const payload = JSON.parse(atob(data.access.split(".")[1]));
-  console.log("Decoded JWT Payload:", payload);
+  
 
   // 3️⃣ Fetch full user details using the access token
   // (You must have a Django endpoint like /api/user/me/ that returns user info)
