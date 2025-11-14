@@ -12,6 +12,9 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
     filterset_class = UserFilter
+    search_fields = ['name', 'email', 'roll_number']
+    ordering_fields = ['name', 'email', 'roll_number']
+    ordering = ['roll_number']
     
     def perform_create(self, serializer):
         if serializer.validated_data['role'] != 'student':
