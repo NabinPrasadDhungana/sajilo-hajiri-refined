@@ -441,11 +441,17 @@ export default function AdminPanel() {
   // ---------- Approve / Unapprove / Feedback ----------
   const handleUserAction = async (email, action,id) => {
     try {
- await userFetch.patch(
-      `accounts/api/users/${id}/`,
-      { approval_status: action+"d" }
-    );
-      toast.success(`User ${action}d successfully`);
+  await userFetch.patch(
+       `accounts/api/users/${id}/`,
+       { approval_status: action+"d" }
+     );
+       toast.success(`User ${action}d successfully`);
+      // If approved, remove any locally stored pending password for this email (frontend-only cleanup)
+      if (action === 'approve' && email) {
+        try {
+          localStorage.removeItem(`pendingPassword:${email}`);
+        } catch (e) { /* ignore */ }
+      }
       const studentList = await userFetch.get("/accounts/api/users/?role=student");
       const userList = await userFetch.get("/accounts/api/users/");
       setUsers(Array.isArray(userList) ? userList : []);
@@ -464,11 +470,11 @@ export default function AdminPanel() {
       return;
     }
     try {
-      await userFetch.post("/api/admin/send-feedback/", { email: selectedEmail, feedback: feedbackText });
+      await userFetch.patch(`/accounts/api/users/${selectedEmail}/`, {feedback: feedbackText });
       toast.success("Feedback sent successfully!");
       setFeedbackText("");
       setSelectedEmail(null);
-      const usersList = await userFetch.get("/api/admin/pending-users/");
+      const usersList = await userFetch.get("/accounts/api/users/");
       setUsers(Array.isArray(usersList) ? usersList : []);
     } catch (err) {
       console.error("Feedback error:", err);
@@ -747,7 +753,7 @@ export default function AdminPanel() {
                             <button className="btn btn-sm btn-danger" onClick={() => deleteUser(u.id)} disabled={u.id === user?.id}>Delete</button>
                             {u.approval_status !== "approved" && <button className="btn btn-sm btn-success" onClick={() => handleUserAction(u.email, "approve", u.id)}>Approve</button>}
                             {u.approval_status !== "unapproved" && <button className="btn btn-sm btn-warning" onClick={() => handleUserAction(u.email, "unapprove", u.id)}>Unapprove</button>}
-                            <button className={`btn btn-sm ${selectedEmail === u.email ? "btn-secondary" : "btn-info"}`} onClick={() => setSelectedEmail(selectedEmail === u.email ? null : u.email)}>{selectedEmail === u.email ? "Cancel" : "Feedback"}</button>
+                            <button className={`btn btn-sm ${selectedEmail === u.id ? "btn-secondary" : "btn-info"}`} onClick={() => setSelectedEmail(selectedEmail === u.id ? null : u.id)}>{selectedEmail === u.id ? "Cancel" : "Feedback"}</button>
                           </div>
                         </td>
                       </tr>
@@ -821,7 +827,7 @@ export default function AdminPanel() {
                 <textarea className="form-control mb-3" rows="4" placeholder="Enter your feedback here..." value={feedbackText} onChange={(e) => setFeedbackText(e.target.value)} />
                 <div className="d-flex justify-content-end gap-2">
                   <button className="btn btn-secondary" onClick={() => { setFeedbackText(""); setSelectedEmail(null); }}>Cancel</button>
-                  <button className="btn btn-primary" onClick={sendFeedback} disabled={!feedbackText.trim()}>Send Feedback</button>
+                  <button className="btn btn-primary" onClick={() => sendFeedback(selectedEmail)} disabled={!feedbackText.trim()}>Send Feedback</button>
                 </div>
               </div>
             </div>

@@ -10,7 +10,9 @@ import api from "../api/api"; // if you're using axios instance
 const Register = (props) => {
      // read context once at top-level
      const auth = useContext(AuthContext);
-     
+     const user = auth?.user ?? null;
+     // whether we prefilled password from localStorage for edit-mode
+     const [passwordFromStorage, setPasswordFromStorage] = useState(false);
      
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -30,6 +32,11 @@ const Register = (props) => {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // admin feedback shown when editing an existing (pending) user
+  const [adminFeedback, setAdminFeedback] = useState('');
+  // password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,8 +90,25 @@ useEffect(() => {
         collegeRoll: userData.roll_number || "",
       });
 
+      // show admin feedback message when editing
+      setAdminFeedback(userData.feedback || "");
+
       if (userData.avatar) {
         setPhoto(userData.avatar.startsWith('http') ? userData.avatar : `http://localhost:8000${userData.avatar}`);
+      }
+      // Try to prefill password from previous registration (frontend-only helper)
+      try {
+        const keyEmail = userData.email || auth.user?.email || '';
+        const key = keyEmail ? `pendingPassword:${keyEmail}` : null;
+        const saved = key ? localStorage.getItem(key) : null;
+        if (saved) {
+          setFormData(prev => ({ ...prev, password: saved, confirmPassword: saved }));
+          setPasswordFromStorage(true);
+        } else {
+          setPasswordFromStorage(false);
+        }
+      } catch (e) {
+        setPasswordFromStorage(false);
       }
     } catch (err) {
       console.error("Error fetching user data:", err);
@@ -94,20 +118,51 @@ useEffect(() => {
   loadUserDataIfEdit();
 }, [props.editMode]);
   const validateForm = () => {
-  const newErrors = {};
-  const { fullName, email, password, confirmPassword, role } = formData;
+   const newErrors = {};
+   const { fullName, email, password, confirmPassword, role } = formData;
 
-  // Common validations
-  if (!fullName.trim()) newErrors.fullName = 'Full Name is required';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Invalid email address';
-  
-  // Fixed password regex
-  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/.test(password)) {
-    newErrors.password = 'Password must be 8+ chars with uppercase, lowercase, number, and special character (@$!%*?&#)';
+   // Common validations
+   if (!fullName.trim()) newErrors.fullName = 'Full Name is required';
+   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Invalid email address';
+
+  // Password rules:
+  // - On create (not edit) password required and must match policy
+  // - On edit: password may be empty if we have a stored password; otherwise must satisfy policy
+  const hasTypedPassword = !!(password && password.trim());
+  // attempt to detect stored password immediately (fallback) so validation passes without typed input
+  let storedPasswordPresent = passwordFromStorage;
+  if (!storedPasswordPresent && props.editMode) {
+    try {
+      const keyEmail = formData.email || auth?.user?.email || '';
+      const key = keyEmail ? `pendingPassword:${keyEmail}` : null;
+      const saved = key ? localStorage.getItem(key) : null;
+      if (saved) {
+        storedPasswordPresent = true;
+        // reflect it in state for UI behavior (optional)
+        setPasswordFromStorage(true);
+        // prefill form data so UI and subsequent submit use it (masked)
+        setFormData(prev => ({ ...prev, password: saved, confirmPassword: saved }));
+      }
+    } catch (e) {
+      /* ignore storage errors */
+    }
   }
-  
-  if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
-  if (!photo) newErrors.photo = 'Please upload or capture a photo';
+
+  const hasPasswordAvailable = hasTypedPassword || storedPasswordPresent;
+  if (!props.editMode) {
+    if (!hasTypedPassword) newErrors.password = 'Password is required';
+  }
+  if (hasTypedPassword) {
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/.test(password)) {
+      newErrors.password = 'Password must be 8+ chars with uppercase, lowercase, number, and special character (@$!%*?&#)';
+    }
+    if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+  } else if (!hasPasswordAvailable) {
+    // editing and no stored password available -> require user to type it
+    newErrors.password = 'Password is required to update your account. Enter it or re-register.';
+  }
+  // Photo required for new registration, optional when editing if user already has an avatar
+  if (!photo && !props.editMode) newErrors.photo = 'Please upload or capture a photo';
 
   // Student-specific validations
   if (role === 'student') {
@@ -128,17 +183,34 @@ useEffect(() => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setIsSubmitting(true);
+     e.preventDefault();
+     setMessage('');
+     setIsSubmitting(true);
 
-    if (!validateForm()) {
+     if (!validateForm()) {
+       setIsSubmitting(false);
+       return;
+     }
+
+    const isPendingUser = !!(user && (user.approval_status === "pending" || user.approval_status === "unapproved"));
+    
+    // Resolve password to send: prefer typed, otherwise use stored password if available
+    let passwordToUse = formData.password && formData.password.trim() ? formData.password.trim() : null;
+    if (!passwordToUse && passwordFromStorage) {
+      try {
+        const key = `pendingPassword:${(user && user.email) || formData.email || ''}`;
+        passwordToUse = key ? localStorage.getItem(key) : null;
+      } catch (e) {
+        passwordToUse = null;
+      }
+    }
+
+    // If editing and no password available, abort (validateForm should have caught this)
+    if (isPendingUser && !passwordToUse) {
+      setErrors(prev => ({ ...prev, password: 'Password required to update your account.' }));
       setIsSubmitting(false);
       return;
     }
-
-   
-    const isPendingUser = auth?.user && auth.user.approval_status === "pending";
 
     try {
       const formPayload = new FormData();
@@ -146,7 +218,7 @@ useEffect(() => {
       formPayload.append('username', formData.email);
       formPayload.append('name', formData.fullName);
       formPayload.append('role', formData.role);
-      formPayload.append('password', formData.password);
+      if (passwordToUse) formPayload.append('password', passwordToUse);
 
       if (formData.role === 'student') {
         formPayload.append('semester', formData.semester);
@@ -155,19 +227,32 @@ useEffect(() => {
         formPayload.append('roll_number', formData.collegeRoll);
       }
 
-      const blob = await fetch(photo).then(res => res.blob());
-      formPayload.append('avatar', blob, 'photo.jpg');
+      // Append avatar only when a new data URL exists (skip when photo is existing URL)
+      if (photo && typeof photo === 'string' && photo.startsWith('data:')) {
+        const blob = await fetch(photo).then(res => res.blob());
+        formPayload.append('avatar', blob, 'photo.jpg');
+      }
 
-  const endpoint = isPendingUser ? `accounts/api/users/${auth.user?.id}/` : 'accounts/api/users/';
-  const response = await api.post(endpoint, formPayload, {
-     headers: {
-       "Content-Type": "multipart/form-data", // ✅ important for image uploads
-     },
-   });
- 
+      const endpoint = (isPendingUser && user?.id) ? `accounts/api/users/${user.id}/` : 'accounts/api/users/';
+      let response;
+      // Ensure axios does not keep application/json header (so browser sets multipart boundary)
+      const reqConfig = { headers: { 'Content-Type': undefined } };
+      if (isPendingUser && user?.id) {
+        response = await api.put(endpoint, formPayload, reqConfig);
+      } else {
+        response = await api.post(endpoint, formPayload, reqConfig);
+      }
+
       const data = response.data;
 
       if (response.status === 200 || response.status === 201) {
+        // Persist password only on initial registration when user typed it
+        if (!isPendingUser && formData.password) {
+          try {
+            const key = `pendingPassword:${formData.email}`;
+            localStorage.setItem(key, formData.password);
+          } catch (e) { /* ignore */ }
+        }
         if (isPendingUser) {
           setMessage('✅ Your information was updated successfully.');
           setTimeout(() => window.location.href = '/dashboard', 1000);
@@ -252,28 +337,66 @@ useEffect(() => {
                 <fieldset className="mb-4">
                   <legend className="h5 text-primary border-bottom pb-2">Security</legend>
                   
-                  <FormField
-                    type="password"
-                    name="password"
-                    label="Password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    error={errors.password}
-                    required
-                    helpText="Password must contain at least 8 characters, including uppercase, lowercase, number, and special character."
-                    icon="lock"
-                  />
+                  {/* Password with visibility toggle */}
+                  <div className="mb-3">
+                    <label htmlFor="passwordInput" className="form-label fw-bold">Password</label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <i className="bi bi-lock"></i>
+                      </span>
+                      <input
+                        id="passwordInput"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                        value={formData.password}
+                        onChange={handleChange}
+                        required={!props.editMode && !passwordFromStorage}
+                        placeholder={props.editMode ? "Leave blank to keep current password" : "Enter password"}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowPassword(s => !s)}
+                        tabIndex={-1}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                      </button>
+                    </div>
+                    {errors.password && <div className="invalid-feedback d-block">{errors.password}</div>}
+                    <small className="form-text text-muted">Password must contain at least 8 characters, including uppercase, lowercase, number, and special character.</small>
+                  </div>
 
-                  <FormField
-                    type="password"
-                    name="confirmPassword"
-                    label="Confirm Password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    error={errors.confirmPassword}
-                    required
-                    icon="lock"
-                  />
+                  {/* Confirm Password with visibility toggle */}
+                  <div className="mb-3">
+                    <label htmlFor="confirmPasswordInput" className="form-label fw-bold">Confirm Password</label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <i className="bi bi-lock"></i>
+                      </span>
+                      <input
+                        id="confirmPasswordInput"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        required
+                        placeholder="Confirm password"
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowConfirmPassword(s => !s)}
+                        tabIndex={-1}
+                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                      >
+                        <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                      </button>
+                    </div>
+                    {errors.confirmPassword && <div className="invalid-feedback d-block">{errors.confirmPassword}</div>}
+                  </div>
                 </fieldset>
 
                 {/* Role Selection */}
@@ -353,6 +476,17 @@ useEffect(() => {
                     error={errors.photo}
                   />
                 </fieldset>
+
+                {/* Admin feedback (visible when editing) */}
+                {props.editMode && adminFeedback && (
+                  <div className="mb-4">
+                    <label className="form-label fw-bold">Admin Feedback</label>
+                    <div className="alert alert-info">
+                      {adminFeedback}
+                    </div>
+                  </div>
+                )
+                }
 
                 <div className="d-grid gap-2">
                   <SubmitButton

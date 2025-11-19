@@ -97,8 +97,8 @@ export default function Dashboard({ user }) {
 
   // use profile from data.user or fallback to currentUser (localStorage/prop)
   const profile = data.user || currentUser;
-
-  if (profile.approval_status === 'pending') {
+  console.log("Dashboard profile:", profile);
+  if (profile.approval_status === 'pending' || profile.approval_status === 'unapproved') {
     return (
       <div className="main-content container mt-5">
         <div className="alert alert-warning">
@@ -106,13 +106,14 @@ export default function Dashboard({ user }) {
         </div>
         {profile.feedback && (
           <div className="alert alert-info">
-            <strong>Admin Feedback:</strong> {profile.feedback}
+            <strong>Admin Feedback:</strong> {data.feedback}
           </div>
         )}
         <Register editMode={true} />
       </div>
     );
   }
+
 
  
 

@@ -96,6 +96,7 @@ const Login = () => {
     email: user.email,
     username: user.username,
     role: user.role || "user",
+    approval_status: user.approval_status
   };
 
   // 5️⃣ Remember email if "remember me" is checked
