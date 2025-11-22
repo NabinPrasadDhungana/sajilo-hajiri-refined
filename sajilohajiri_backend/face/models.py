@@ -8,4 +8,4 @@ class FaceEncoding(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Face data for {self.student.username}"
+        return f"Face data for {self.student.email}"
