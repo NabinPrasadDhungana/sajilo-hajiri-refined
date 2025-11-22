@@ -27,27 +27,12 @@ def encode_student_face(sender, instance, created, **kwargs):
             encoding_data = json.dumps(encodings[0].tolist())
             FaceEncoding.objects.create(student=instance, encoding_data=encoding_data)
             print(f"Face encoding saved for {instance.email}")
-            content = {
-                'message' : f'Face encoding saved for {instance.email}'
-            }
-            return Response(content, status=status.HTTP_201_CREATED)
+            
         else:
             print(f"No face found for {instance.email}")
-            content = {
-                'message': f'Face not found in the user avatar, please enter an image containing the user\'s face facing the camera, with a good lighting'
-            }
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
             
     except FileNotFoundError:
         print(f"Avatar file missing for {instance.email}")
-        content = {
-                'message': f'Avatar file missing'
-            }
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
     
     except Exception as e:
         print(f"Error processing face for {instance.email}: {str(e)}")
-        content = {
-                'message': f'{str(e)}'
-            }
-        return Response(content, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
