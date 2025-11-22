@@ -4,11 +4,12 @@ import face_recognition
 import json
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import User, FaceEncoding
+from .models import FaceEncoding
+from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def encode_student_face(sender, instance, created, **kwargs):
     if not (instance.role == 'student' and 
             instance.approval_status == 'approved' and 
